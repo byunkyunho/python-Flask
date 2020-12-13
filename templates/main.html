@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>버스 코로나 정보</title>
+    <style>
+    h1{
+        font-size: 45px;
+        text-align: center;
+        color: black;
+        margin-top: 30px;
+        margin-bottom: 30px;
+        
+    }
+    h2{
+        font-size: 25px;
+        text-align: left;
+        margin-bottom: 20px;
+        margin-top: 20px;
+    }
+    body{
+        background-color: rgb(245, 255, 255);
+    }
+    table{
+        border: 1px solid black;
+        border-collapse: collapse;
+        font-size: 20px;
+        width: 100%;
+        margin-bottom: 30px;
+
+    }
+    tr, th, td{
+        font-size: 15px;
+        border: 1px solid black;
+        padding: 10px;
+        text-align: center;
+    }
+    div{
+        padding-left: 70px;
+        padding-right: 70px;
+    }
+    input[type=text]{
+        margin-top:30px;
+        margin-bottom: 50px;
+        text-align: center;
+        height: 30px;
+        width: 300px;
+        font-size: 15px;
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+    button {
+        margin-top: 30px;
+        text-align: center;
+        width: 70px;
+        height: 35px;
+        font-size: 15px;
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;   
+        margin-left: -5px;
+    }
+    .text{
+        width: 500px;
+    }
+    label{
+        font-size: 15px;
+        
+    }
+    div.bus_button{
+        text-align: center;
+        margin-top: 20px;
+        
+    }
+    form{
+        margin-bottom: 80px;
+    }
+    </style>
+    <meta http-equiv="refresh" content="30">
+</head>
+<body>
+    <h1>코로나 확진 현황</h1>
+    <div>
+        <table>
+            <th>확진자수</th>
+            <th>완치자수</th>
+            <th>사망자수</th>
+            <th>오늘 확진자수</th>
+            <tr>
+            {% for data in corona_data %}
+                <td>{{data}}명</td>
+            {% endfor %}
+            </tr>
+        </table>
+    </div>
+    
+    {% if title == "" %}
+        <h1>결과 없음</h1>
+    {% elif bus_data == [] %}
+        <h1>결과 없음 ({{title}})</h1>
+    {% else %}
+        <h1>{{title}} 버스정보</h1>
+    {% endif %}
+
+    {% if not bus_data == [] %}
+        <div>
+            {% for bus_list in bus_data %}
+                {% if not bus_list == [] %}
+                <h2>정류장 번호 : {{bus_list[0][4]}} </h2>
+                <table>
+                    <th>버스번호</th>
+                    <th>방향</th></tj>
+                    <th>현재역</th>
+                    <th>남은시간</th>
+                    {% for bus in bus_list %}
+                        <tr>
+                            {% for a in bus[0:4] %}
+                                <td>
+                                {{a}}
+                                {% if loop.first %}
+                                    {% if bus[5] == 1 %}
+                                        <img src="{{ url_for('static', filename='img/blue.png') }}" width="60" height="24" >
+                                    {% elif bus[5] == 2 %}
+                                        <img src="{{ url_for('static', filename='img/green.png') }}" width="60" height="24" >
+                                    {% elif bus[5] == 3 %}
+                                        <img src="{{ url_for('static', filename='img/red.png') }}" width="60" height="24" >
+                                    {% elif bus[5] == 4 %}
+                                        <img src="{{ url_for('static', filename='img/yellow.png') }}" width="60" height="24" >
+                                    {% endif %}
+                                {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </table>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="bus_button">
+        <form action="/" method="GET">
+            <label for = "station">정류소 검색  :  </label>
+            <input placeholder="예 : 고덕역, 배재중고등학교" class = "text" id = "station" type="text" name="station">
+            <button onclick="check_input()">확인</button>
+        </form>
+    </div>
+    <script>
+        function check_input() {
+            if (document.getElementById("station").value === ""){
+                alert("정류장을 입력해주세요");
+            }
+            else{
+                document.querySelector("form").submit;
+            }
+        }
+    </script>
+</body>
