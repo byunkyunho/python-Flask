@@ -1,20 +1,20 @@
-from flask import Flask, render_template, url_for, request
+from flask import Flask, render_template, url_for, request, jsonify
 from bs4 import BeautifulSoup
 import requests
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 
-corona_find_list = ("decideCnt", "clearCnt", "deathCnt")
-bus_find_list = ("rtNm", "adirection", "stationNm1")
+bus_find_list = ("rtnm", "adirection", "stationnm1")
+corona_find_list = ("decidecnt", "clearcnt", "deathcnt")
 
 def set_bus_information(id_list):
     global bus_list
     bus_list = []
     for id in id_list:
         list_2 = []
-        bus_requests = return_parse("http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid?ServiceKey=vd%2B2nNyF4R6cKQheiYx%2FnBKf3jBbnCburz0CpVI6lma62eC7DKIiVCvnIP8geQzI3muGUuDjvcWrKCKzrzyQhw%3D%3D&arsId={}".format(id), "lxml-xml")
-        for bus in bus_requests.find_all("itemList"):
+        bus_requests = return_parse("http://ws.bus.go.kr/api/rest/stationinfo/getStationByUid?ServiceKey=vd%2B2nNyF4R6cKQheiYx%2FnBKf3jBbnCburz0CpVI6lma62eC7DKIiVCvnIP8geQzI3muGUuDjvcWrKCKzrzyQhw%3D%3D&arsId={}".format(id), "lxml")
+        for bus in bus_requests.find_all("itemlist"):
             list_1 = []
             try:
                 if not bus.find("arrmsg1").text == "운행종료":
@@ -60,17 +60,22 @@ def return_parse(url, type):
     
 def return_corona_data():
     now = datetime.now()
+    if int(now.strftime("%H")) < 11:
+        now = now + timedelta(days=-1)
+    yesterday = now + timedelta(days=-1)
     corona_data = []
-    if now.day < 10:
-        now = int("{}{}0{}".format(now.year, now.month, now.day))
-    else:
-        now = int("{}{}{}".format(now.year, now.month, now.day))
-    if int(datetime.now().strftime("%H")) < 11:
-        now -= 1
-    corona_response_parse = return_parse("http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson?serviceKey=qU6ZiWZWr9TyzBf4CSQePVRrLv656KwyxySrnDDH4o9I71HOfECubfmhWxHeIYMyg6X9yLyogSFQV0ucd9gFpA%3D%3D&pageNo=1&numOfRows=10&startCreateDt={}&endCreateDt={}".format(now, now), 'lxml-xml')
+    
+    now = now.strftime("%Y%m%d")
+    yesterday = yesterday.strftime("%Y%m%d")
+
+    corona_response_parse = return_parse("http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson?serviceKey=qU6ZiWZWr9TyzBf4CSQePVRrLv656KwyxySrnDDH4o9I71HOfECubfmhWxHeIYMyg6X9yLyogSFQV0ucd9gFpA%3D%3D&pageNo=1&numOfRows=10&startCreateDt={}&endCreateDt={}".format(now, now), 'lxml')
+    print("http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson?serviceKey=qU6ZiWZWr9TyzBf4CSQePVRrLv656KwyxySrnDDH4o9I71HOfECubfmhWxHeIYMyg6X9yLyogSFQV0ucd9gFpA%3D%3D&pageNo=1&numOfRows=10&startCreateDt={}&endCreateDt={}".format(now, now))
+    
     for find in corona_find_list:
         corona_data.append(corona_response_parse.find(find).text)
-    corona_data.append(int(corona_data[0]) - int(return_parse("http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson?serviceKey=qU6ZiWZWr9TyzBf4CSQePVRrLv656KwyxySrnDDH4o9I71HOfECubfmhWxHeIYMyg6X9yLyogSFQV0ucd9gFpA%3D%3D&pageNo=1&numOfRows=10&startCreateDt={}&endCreateDt={}".format(now -1 , now - 1), 'lxml-xml').find("decideCnt").text))
+
+    corona_data.append(int(corona_data[0]) - int(return_parse("http://openapi.data.go.kr/openapi/service/rest/Covid19/getCovid19InfStateJson?serviceKey=qU6ZiWZWr9TyzBf4CSQePVRrLv656KwyxySrnDDH4o9I71HOfECubfmhWxHeIYMyg6X9yLyogSFQV0ucd9gFpA%3D%3D&pageNo=1&numOfRows=10&startCreateDt={}&endCreateDt={}".format(yesterday ,yesterday), 'lxml').find("decidecnt").text))
+
         
     return corona_data
 
@@ -79,14 +84,14 @@ app = Flask(__name__)
 @app.route('/')
 
 def main(): 
-    global bus_list
+    global bus_list 
     station = request.args.get('station')
     if not station == None or station == "": 
         set_bus_information(bus_id_list(station))
     else:
         bus_list = []
-    #print(bus_list)
+
     return render_template('main.html', title=station,  bus_data = bus_list, corona_data = return_corona_data())
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=6565)
